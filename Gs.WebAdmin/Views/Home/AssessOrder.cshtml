@@ -1,0 +1,260 @@
+﻿@{
+    ViewData["Title"] = "商品管理";
+}
+@using Gs.Domain.Enums;
+<style>
+    .form-inline .col-sm-12 {
+        line-height: 55px;
+    }
+
+    .form-inline .col-sm-2 {
+        width: 80px;
+    }
+
+    .form-inline .col-sm-4 .col-sm-4 {
+        line-height: 35px;
+    }
+
+    .form-inline .control-label {
+        text-align: right;
+    }
+
+    .search .form-inline {
+        line-height: 40px;
+    }
+
+    .download-imgbox {
+        overflow: hidden;
+        display: flex;
+        flex-wrap: wrap;
+        margin: 0.2rem auto;
+    }
+
+    .thumbimg {
+        width: 80px;
+        height: 80px;
+        overflow: hidden;
+        position: relative;
+        margin: 0.13rem;
+    }
+
+        .thumbimg img {
+            width: 80px;
+            height: 80px;
+        }
+
+        .thumbimg span {
+            display: block;
+            width: 20px;
+            height: 20px;
+            background: url(/images/del_pic.png) no-repeat center center;
+            background-size: 20px 20px;
+            position: absolute;
+            top: 0;
+            right: 0;
+            background-color: rgba(255, 255, 255, 0.5);
+        }
+
+    .csimg {
+        width: 80px;
+        height: 80px;
+        overflow: hidden;
+        position: relative;
+        margin: 0.13rem;
+    }
+
+        .csimg .xuanze {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 80px;
+            height: 80px;
+            background: url(/images/add_pic.png) no-repeat center center;
+            background-size: 100% 100%;
+        }
+</style>
+
+<div class="row search">
+    <div class="form-inline">
+        <div class="form-inline">
+            <div class="form-inline">
+                <label control-label>社区中心:</label>
+                <input type="text" class="form-control" size="12" ng-model="search.keyword" />
+            </div>
+            <label control-label>订单状态:</label>
+            <select class="form-control" style="display:inline-block;width:auto;" ng-model="search.id">
+                <option value="-1" selected>全部订单</option>
+                <option value="2">已邮寄订单</option>
+                <option value="4">已完成订单</option>
+            </select>
+        </div>
+        <button class="btn btn-primary" type="button" ng-click="pageChanged(true)">搜索</button>
+    </div>
+</div>
+<table class="table table-hover table-condensed table-bordered" style="width:auto;">
+    <thead>
+        <tr style="height:35px;">
+            <th style="width: 7%;">订单号</th>
+            <th style="width: 7%;">会员昵称</th>
+            <th style="width: 6%;">物品类型</th>
+            <th style="width: 6%;">物品级别</th>
+            <th style="width: 6%;">成色</th>
+            <th style="width: 4%;">数量</th>
+            <th style="width: 7%;">购买价格</th>
+            <th style="width: 7%;">评估积分</th>
+            <th style="width: 6%;">快递类型</th>
+            <th style="width: 5%;">订单状态</th>
+            <th style="width: 8%;">备注</th>
+            <th style="width: 8%;">提交时间</th>
+            <th style="width: 8%;">操作</th>
+        </tr>
+    </thead>
+    <tbody class="wait-loaded">
+        <tr ng-repeat="m in List">
+            <td>{{m.id}}</td>
+            <td>{{m.nick}}</td>
+            <td ng-switch="{{m.repoType}}">
+                <div ng-switch-when="1">夏装</div>
+                <div ng-switch-when="2">旧衣服</div>
+                <div ng-switch-when="3">闲置物</div>
+            </td>
+            <td ng-switch="{{m.itemGrade}}">
+                <div ng-switch-when="1">普通类</div>
+                <div ng-switch-when="2">名牌类</div>
+            </td>
+            <td ng-switch="{{m.condition}}">
+                <div ng-switch-when="10">全新</div>
+                <div ng-switch-when="9">九成新</div>
+                <div ng-switch-when="8">八成新</div>
+                <div ng-switch-when="7">七成新及以下</div>
+            </td>
+            <td>{{m.itemCunt}} 件</td>
+            <td>{{m.unitPrice * m.itemCunt}} 元</td>
+            <td>{{m.assessIntegral}} 积分</td>
+            <td ng-switch="{{m.shipMethod}}">
+                <div ng-switch-when="1">个人邮寄</div>
+                <div ng-switch-when="2">上门取件</div>
+            </td>
+            <td ng-switch="{{m.state}}">
+                <div ng-switch-when="2" style="color:red;">已邮寄</div>
+                <div ng-switch-when="4" style="color:black;">已完成</div>
+            </td>
+            <td>{{m.remark}}</td>
+            <td>{{m.createTime}}</td>
+            <td>
+                <a ng-click="showItem(m)" href="javascript:void(0);">查看</a>
+            </td>
+        </tr>
+    </tbody>
+</table>
+<div class="mypager wait-loaded">
+    <ul uib-pagination total-items="search.recordCount" items-per-page="search.pageSize" ng-change="pageChanged()"
+        ng-model="search.pageIndex" max-size="7" class="pagination-sm" boundary-links="true" num-pages="search.numPages"
+        boundary-link-numbers="true" first-text="首页" last-text="末页" previous-text="上一页" next-text="下一页"></ul>
+    <div class="recordCount">共 {{search.recordCount}} 条</div>
+</div>
+@* 发货 *@
+<div class="modal fade in" id="addModel" tabindex="-1" role="dialog" data-backdrop="static" aria-labelledby="myModalLabel">
+    <div class="modal-dialog modal-lg" role="document" style="height:100%">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal">
+                    <span aria-hidden="true">&times;</span><span class="sr-only">Close</span>
+                </button>
+            </div>
+            <form name="myForm">
+                <div class="tab-content">
+                    <div role="tabpanel" class="tab-pane active" id="setting_1">
+                        <div class="form-inline">
+                            <input class="form-control" type="text" ng-model="model1.id" style="display:none;" />
+                            <div class="col-sm-12">
+                                <label class="control-label col-sm-4">购买总价:</label>
+                                <div class="col-sm-8">
+                                    <input class="form-control" type="text" ng-model="totalPrice" placeholder="购买总价" required />
+                                </div>
+                            </div>
+                            <div class="col-sm-12">
+                                <label class="control-label col-sm-4">评估积分:</label>
+                                <div class="col-sm-8">
+                                    <input class="form-control" type="number" ng-model="model1.assessIntegral" size="300" placeholder="评估积分" required />
+                                </div>
+                            </div>
+                            <div class="col-sm-12">
+                                <label class="control-label col-sm-4">备注:</label>
+                                <div class="col-sm-8">
+                                    <textarea class="form-control" ng-model="model1.remark" cols="360" rows="8" placeholder="备注"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success" ng-disabled="model1.$invalid" ng-click="saveItem(model1)">发放积分</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade in" id="ShowImage_Form" tabindex="-1" role="dialog" data-backdrop="static" aria-labelledby="myModalLabel">
+    <div class="modal-dialog modal-lg" role="document" style="height:80%">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+            </div>
+            <div class="modal-body">
+                <div id="img_show" style="text-align:center;">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts{
+    <script type="text/javascript">
+        function showimage(obj) {
+            $("#ShowImage_Form").modal("show");
+            $("#ShowImage_Form").find("#img_show").html("<img src='" + obj.src + "' class='carousel-inner img-responsive img-rounded' />");
+        }
+    </script>
+    <script type="text/javascript">
+        $angular.add(function ($scope, $query, $timeout, $sce) {
+            $scope.search = { pageIndex: 1, pageSize: 20, id: -1 };
+            $scope.totalPrice = 0;
+            $scope.pageChanged = function (reindex) {
+                if (reindex) {
+                    $scope.search.pageIndex = 1;
+                }
+                $query.post("/Community/BackOrder", $scope.search, function (response) {
+                    if (response.code === 200) {
+                        $scope.List = response.data;
+                        $scope.search.recordCount = response.recordCount;
+                    } else {
+                        $Alert(response.message);
+                    }
+                });
+            };
+            $scope.pageChanged();
+            $scope.saveItem = function (model) {
+                $Confirm("你确定要发放积分吗?", function () {
+                    $query.post(`/Community/Distribute`, model, res => {
+                        if (res.code == 200) {
+                            $scope.pageChanged();
+                            $("#addModel").modal("hide");
+                            $("#editModel").modal("hide");
+                        } else {
+                            $Alert(res.message);
+                        }
+                    });
+                }, "消息提醒");
+            };
+            $scope.showItem = function (model) {
+                $scope.model1 = model;
+                $scope.totalPrice = model.itemCunt * model.unitPrice;
+                $("#addModel").modal("show");
+            };
+        });
+
+    </script>
+
+}

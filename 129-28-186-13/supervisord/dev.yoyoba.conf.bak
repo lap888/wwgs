@@ -1,0 +1,8 @@
+[program:Api]
+command=dotnet yoyoApi.dll
+directory=/apps/project/api
+autorestart=true
+stderr_logfile=/apps/supervisord/logs/api/err.log
+stdout_logfile=/apps/supervisord/logs/api/run.log
+environment=ASPNETCORE_ENVIRONMENT=Development,ASPNETCORE_URLS="http://172.30.0.7:6006"
+user=root

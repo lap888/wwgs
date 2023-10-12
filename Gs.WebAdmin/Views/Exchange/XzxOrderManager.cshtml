@@ -1,0 +1,301 @@
+﻿@{
+ViewData["Title"] = "交易管理";
+}
+@using Gs.Domain.Enums;
+<style>
+    .form-inline .col-sm-12 {
+        line-height: 55px;
+    }
+
+    .form-inline .col-sm-2 {
+        width: 80px;
+    }
+
+    .form-inline .col-sm-4 .col-sm-4 {
+        line-height: 35px;
+    }
+
+    .form-inline .control-label {
+        text-align: right;
+    }
+
+    .search .form-inline {
+        line-height: 40px;
+    }
+</style>
+
+<div class="row search">
+    <div class="form-inline">
+        <div class="form-inline">
+            <div class="form-inline">
+                <label control-label>买/卖方:</label>
+                <select class="form-control" style="display:inline-block;width:auto;" ng-model="search.type">
+                    <option value="">请选择</option>
+                    <option value="buyer">买家</option>
+                    <option value="seller">卖家</option>
+                </select>
+                <label control-label>订单类型:</label>
+                <select class="form-control" style="display:inline-block;width:auto;" ng-model="search.coinType">
+                    <option value="">请选择</option>
+                    <option value="U">交易单</option>
+                    <option value="R">新人券</option>
+                </select>
+                <input type="text" class="form-control" placeholder="手机号：" ng-model="search.mobile" />
+                <input type="text" class="form-control" placeholder="支付宝：" ng-model="search.alipay" />
+                <label control-label>订单状态:</label>
+                <select class="form-control" style="display:inline-block;width:auto;" ng-model="search.status">
+                    <option value="" selected>全部</option>
+                    <option value="0">已取消</option>
+                    <option value="1">未成单</option>
+                    <option value="2">待付款</option>
+                    <option value="3">已付款</option>
+                    <option value="4">已完成</option>
+                    <option value="5">申诉中</option>
+                    <option value="6">已超时</option>
+                </select>
+            </div>
+        </div>
+        <button class="btn btn-primary" type="button" ng-click="pageChanged(true)">搜索</button>
+    </div>
+</div>
+<table class="table table-hover table-condensed table-bordered" style="width:auto;">
+    <thead>
+        <tr style="height:35px;">
+            <th style="width: 2%;">序号</th>
+            <th style="width: 4%;">订单号</th>
+            <!-- <th style="width: 4%;">币种</th> -->
+            <th style="width: 4%;">买家支付宝</th>
+            <th style="width: 4%;">卖家支付宝</th>
+            <th style="width: 3%;">卖家</th>
+            <th style="width: 3%;">数量</th>
+            <th style="width: 3%;">单价</th>
+            <th style="width: 4%;">总金额</th>
+            <th style="width: 5%;">成单时间</th>
+            <th style="width: 3%;">支付截图</th>
+            <th style="width: 5%;">支付时间</th>
+            <th style="width: 3%;">状态</th>
+            <th style="width: 3%;">超时</th>
+            <th style="width: 10%;">操作</th>
+        </tr>
+    </thead>
+    <tbody class="wait-loaded">
+        <tr ng-repeat="m in List">
+            <td>{{m.id}}</td>
+            <td>{{m.orderId}}</td>
+            <!-- <td>{{m.coinType}}</td> -->
+            <td>{{m.buyerAlipay}}</td>
+            <td>{{m.sellerAlipay}}</td>
+            <td>{{m.trueName}}</td>
+            <td>{{m.sellCount}}</td>
+            <td>{{m.unitPrice}}</td>
+            <td>{{m.totalPrice}}</td>
+            <td>{{m.confirmTime}}</td>
+            <td class="_image">
+                <img ng-src="{{m.payPic}}" onclick="showimage(this)" style="width:30px;height:30px" />
+            </td>
+            <td>{{m.payTime}}</td>
+            <td ng-switch="{{m.tradeState}}">
+                <div ng-switch-when="0">已取消</div>
+                <div ng-switch-when="1" style="color:darkgoldenrod;">未成单</div>
+                <div ng-switch-when="2" style="color:purple;">待付款</div>
+                <div ng-switch-when="3" style="color:blue;">已付款</div>
+                <div ng-switch-when="4" style="color:green;">已完成</div>
+                <div ng-switch-when="5" style="color:red;">申诉中</div>
+                <div ng-switch-when="6" style="color:orange;">超时</div>
+            </td>
+            <td>{{m.timeOutUser}}</td>
+            <td>
+                <a ng-click="Close(m)" href="javascript:void(0);">关闭</a> ||
+                <a ng-click="PaidCoin(m)" href="javascript:void(0);">发货</a> ||
+                @* <a ng-click="Resume(m)" href="javascript:void(0);">恢复</a>|| *@
+                <a ng-click="BanBuyerView(m)" href="javascript:void(0);">封禁买家</a>
+                @* <a ng-click="Unblock(m)" href="javascript:void(0);">解除超时</a>|| *@
+                <a style="display:{{m.tradeState == 5 ? 'black' : 'none'}};" ng-click="ViewAppeal(m)"
+                    href="javascript:void(0);">|| 申诉原因</a>
+            </td>
+        </tr>
+    </tbody>
+</table>
+<div class="mypager wait-loaded">
+    <ul uib-pagination total-items="search.recordCount" items-per-page="search.pageSize" ng-change="pageChanged()"
+        ng-model="search.pageIndex" max-size="7" class="pagination-sm" boundary-links="true" num-pages="search.numPages"
+        boundary-link-numbers="true" first-text="首页" last-text="末页" previous-text="上一页" next-text="下一页"></ul>
+    <div class="recordCount">共 {{search.recordCount}} 条</div>
+</div>
+<div class="modal fade in" id="ShowImage_Form" tabindex="-1" role="dialog" data-backdrop="static"
+    aria-labelledby="myModalLabel">
+    <div class="modal-dialog modal-lg" role="document" style="height:80%">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span
+                        class="sr-only">Close</span></button>
+            </div>
+            <div class="modal-body">
+                <div id="img_show" style="text-align:center;">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade in" id="ShowAppeal" tabindex="-1" role="dialog" data-backdrop="static"
+    aria-labelledby="myModalLabel">
+    <div class="modal-dialog modal-lg" role="document" style="height:80%">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span
+                        class="sr-only">Close</span></button>
+            </div>
+            <div class="modal-body">
+                <div id="img_show" style="text-align:center;">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade in" id="BanBuyerBox" tabindex="-1" role="dialog" data-backdrop="static"
+    aria-labelledby="myModalLabel">
+    <div class="modal-dialog modal-lg" role="document" style="height:80%">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span
+                        class="sr-only">Close</span></button>
+            </div>
+            <div class="modal-body" style="min-height:400px;">
+                <form name="BanBuyerFrom">
+                    <div class="tab-content">
+                        <div role="tabpanel" class="tab-pane active" id="setting_1">
+                            <div class="form-inline">
+                                <div class="col-sm-12">
+                                    <label class="control-label col-sm-2">理由:</label>
+                                    <div class="col-sm-10">
+                                        <textarea class="form-control" cols="50" rows="6" ng-model="u.appealReason"
+                                            placeholder="" required /></textarea>
+                                    </div>
+                                </div>
+                                <div class="col-sm-12">
+                                    <div class="col-sm-10 col-sm-offset-2">
+                                        <button class="btn btn-success" ng-click="BanBuyer(u)"
+                                            ng-disabled="BanBuyerFrom.$invalid">提 交</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+@section Scripts{
+<script type="text/javascript">
+    function showimage(obj) {
+        $("#ShowImage_Form").modal("show");
+        $("#ShowImage_Form").find("#img_show").html("<img src='" + obj.src + "' class='carousel-inner img-responsive img-rounded' style='max-width:350px; margin: 0 auto;'/>");
+    }
+</script>
+<script type="text/javascript">
+    $angular.add(function ($scope, $query, $timeout, $sce) {
+        $scope.search = { pageIndex: 1, pageSize: 20 };
+
+        $scope.pageChanged = function (reindex) {
+            if (reindex) {
+                $scope.search.pageIndex = 1;
+            }
+            $query.post("/Exchange/List", $scope.search, function (response) {
+                if (response.code === 200) {
+                    $scope.List = response.data.list;
+                    $scope.search.recordCount = response.recordCount;
+                } else {
+                    $Alert(response.message);
+                }
+            });
+        };
+        $scope.Resume = function (model) {
+            $Confirm("你确定要恢复此订单吗?", function () {
+                $query.post("/Exchange/Resume", model, function (response) {
+                    if (response.code === 200) {
+                        $scope.pageChanged();
+                    } else {
+                        $Alert(response.message);
+                    }
+                });
+            }, "消息提醒");
+        }
+        $scope.Close = function (model) {
+            $Confirm("你确定要关闭此订单吗?", function () {
+                $query.post("/Exchange/Close", model, function (response) {
+                    if (response.code === 200) {
+                        $scope.pageChanged();
+                    } else {
+                        $Alert(response.message);
+                    }
+                });
+            }, "消息提醒");
+        }
+        $scope.PaidCoin = function (model) {
+            $Confirm("你确定收到款了吗?", function () {
+                model.coinType = "RZQ";
+                model.orderNum = model.orderId;
+                $query.post("/Member/PaidCoin", model, function (response) {
+                    if (response.code === 200) {
+                        $scope.pageChanged();
+                    } else {
+                        $Alert(response.message);
+                    }
+                });
+            }, "消息提醒");
+        }
+
+        $scope.BanBuyerView = function (model) {
+            $scope.u = model;
+            $("#BanBuyerBox").modal("show");
+        }
+        $scope.BanBuyer = function (model) {
+            $Confirm("你确定要封禁“买家”吗?", function () {
+                $query.post("/Exchange/BanBuyer", model, function (response) {
+                    if (response.code === 200) {
+                        $scope.pageChanged();
+                        $("#BanBuyerBox").modal("hide");
+                    } else {
+                        $Alert(response.message);
+                    }
+                });
+            }, "消息提醒");
+        }
+        $scope.Unblock = function (model) {
+            $Confirm("你确定要解除超时吗?", function () {
+                $query.post("/Exchange/Unblock", model, function (response) {
+                    if (response.code === 200) {
+                        $scope.pageChanged();
+                    } else {
+                        $Alert(response.message);
+                    }
+                });
+            }, "消息提醒");
+        }
+        $scope.ViewAppeal = function (model) {
+            $query.post("/Exchange/ViewAppeal", model, function (response) {
+                if (response.code === 200) {
+                    $("#ShowAppeal").modal("show");
+                    let html = "";
+                    html += "<ul>";
+                    $.each(response.data, function (key, val) {
+                        html += "<li style='list-style:none; display:block; width:33%;'>";
+                        html += "<span style='text-align:center;'>" + val.description + "</span><br /><img src='" + val.picUrl + "' style='display:block; width:100%;'/>";
+                        html += "</li>";
+                    });
+                    html += "</ul>";
+
+
+                    $("#ShowAppeal").find("#img_show").html(html);
+                } else {
+                    $Alert(response.message);
+                }
+            });
+        }
+        $scope.pageChanged();
+    });
+
+</script>
+
+}

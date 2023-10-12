@@ -1,0 +1,266 @@
+﻿@{
+    ViewData["Title"] = "Banner管理";
+}
+@using Gs.Domain.Enums;
+<style>
+    .form-inline .col-sm-12 {
+        line-height: 55px;
+    }
+
+    .form-inline .col-sm-2 {
+        width: 80px;
+    }
+
+    .form-inline .col-sm-4 .col-sm-4 {
+        line-height: 35px;
+    }
+
+    .form-inline .control-label {
+        text-align: right;
+    }
+
+    .search .form-inline {
+        line-height: 40px;
+    }
+</style>
+
+<div class="row search">
+    <div class="form-inline">
+        <div class="form-inline">
+            <label control-label>轮播类型:</label>
+            <select class="form-control" style="display:inline-block;width:auto;" ng-model="search.id">
+                <option value="0">请选择</option>
+                <option value="1">详情内容</option>
+                <option value="2">跳转网页</option>
+            </select>
+        </div>
+        <button class="btn btn-primary" type="button" ng-click="pageChanged(true)">搜索</button>
+        <a class="btn btn-primary" ng-click="showAddModal(m)" href="javascript:void(0);">添加轮播</a>
+    </div>
+</div>
+<table class="table table-hover table-condensed table-bordered" style="width:auto;">
+    <thead>
+        <tr style="height:35px;">
+            <th style="width: 5%;">序号</th>
+            <th style="width: 5%;">类型</th>
+            <th style="width: 7%;">图片</th>
+            <th style="width: 70%;">内容</th>
+            <th style="width: 5%;">排序</th>
+            <th style="width: 8%;">操作</th>
+        </tr>
+    </thead>
+    <tbody class="wait-loaded">
+        <tr ng-repeat="m in List">
+            <td>{{m.id}}</td>
+            <td ng-switch="{{m.type}}">
+                <div ng-switch-when="1">跳转网页</div>
+                <div ng-switch-when="2">文本内容</div>
+            </td>
+            <td class="_image">
+                <img ng-src="http://file.yoyoba.cn/{{m.imageUrl}}" onclick="showimage(this)" style="width:30px;height:30px" />
+            </td>
+            <td ng-bind-html="htmlConvertText(m.params)"></td>
+            <td>{{m.queue}}</td>
+            <td>
+                <a ng-click="delAdPic(m)" href="javascript:void(0);">删除</a>
+            </td>
+        </tr>
+    </tbody>
+</table>
+<div class="mypager wait-loaded">
+    <ul uib-pagination total-items="search.recordCount" items-per-page="search.pageSize" ng-change="pageChanged()" ng-model="search.pageIndex" max-size="7"
+        class="pagination-sm" boundary-links="true" num-pages="search.numPages" boundary-link-numbers="true" first-text="首页" last-text="末页" previous-text="上一页" next-text="下一页"></ul>
+    <div class="recordCount">共 {{search.recordCount}} 条</div>
+</div>
+@* 大图展示 *@
+<div class="modal fade in" id="ShowImage_Form" tabindex="-1" role="dialog" data-backdrop="static" aria-labelledby="myModalLabel">
+    <div class="modal-dialog modal-lg" role="document" style="height:100%">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+            </div>
+            <div class="modal-body">
+                <div id="img_show">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+@* 添加Banner *@
+<div class="modal fade in" id="addModel" tabindex="-1" role="dialog" data-backdrop="static" aria-labelledby="myModalLabel">
+    <div class="modal-dialog modal-lg" role="document" style="height:100%">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+            </div>
+            <form name="myForm">
+                <div class="tab-content">
+                    <div role="tabpanel" class="tab-pane active" id="setting_1">
+                        <div class="form-inline">
+                            <input class="form-control" type="text" data-ng-model="model1.id" style="display:none;" />
+                            <div class="col-sm-12">
+                                <label class="control-label col-sm-4">标题:</label>
+                                <div class="col-sm-8">
+                                    <input class="form-control" type="text" ng-model="model1.title" placeholder="标题" required />
+                                </div>
+                            </div>
+                            <div class="col-sm-12">
+                                <label class="control-label col-sm-4">轮播类型:</label>
+                                <div class="col-sm-8">
+                                    <select class="form-control" ng-model="model1.type" required>
+                                        <option value="0">请选择</option>
+                                        <option value="1">详情内容</option>
+                                        <option value="2">跳转网页</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-sm-12">
+                                <label class="control-label col-sm-4">排序:</label>
+                                <div class="col-sm-8">
+                                    <input class="form-control" type="text" ng-model="model1.queue" placeholder="排序" required />
+                                </div>
+                            </div>
+                            <div class="col-sm-12">
+                                <label class="control-label col-sm-4">图片:</label>
+                                <div class="col-sm-8">
+                                    <input type="file" ng-model="model1.imageUrl" title="点击上传图片" class="form-control" style="position:absolute;width:100%;height:100%;opacity:0;filter:alpha(opacity=0);cursor:pointer;" accept="image/png,image/jpeg,image/bmp" required onchange="$(this).scope().uploadHeadImage(this)" />
+                                    <img ng-src="{{model1.imageUrl}}" style="max-width:250px;" title="浏览图片" alt="点击上传图片" />
+                                    <br />
+                                </div>
+                            </div>
+                            <div class="col-sm-12" ng-if="model1.type != 2">
+                                <label class="control-label col-sm-4">内容:</label>
+                                <div class="col-sm-8">
+                                    <textarea config="customConfig" class="ueditor" style="height:320px;max-width:none;" ng-model="model1.params" placeholder="内容"></textarea>
+                                </div>
+                            </div>
+                            <div class="col-sm-12" ng-if="model1.type == 2">
+                                <label class="control-label col-sm-4">跳转地址:</label>
+                                <div class="col-sm-8">
+                                    <input class="form-control" type="text" ng-model="model1.params" style="width:360px;" placeholder="https://" required />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success" ng-disabled="myModel.$invalid" ng-click="save()">保 存</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade in" id="ShowImage_Form" tabindex="-1" role="dialog" data-backdrop="static" aria-labelledby="myModalLabel">
+    <div class="modal-dialog modal-lg" role="document" style="height:80%">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+            </div>
+            <div class="modal-body">
+                <div id="img_show" style="text-align:center;">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts{
+    <script type="text/javascript">
+        function showimage(obj) {
+            $("#ShowImage_Form").modal("show");
+            $("#ShowImage_Form").find("#img_show").html("<img src='" + obj.src + "' class='carousel-inner img-responsive img-rounded' />");
+        }
+    </script>
+    <script type="text/javascript">
+        $angular.add(function ($scope, $query, $timeout, $sce) {
+            $scope.imageUrl = "";
+            $scope.search = { pageIndex: 1, pageSize: 20, id: 0, mobile: "app" };
+            $scope.showAddModal = function (model) {
+                if (model != null) {
+                    $scope.imageUrl = model.imageUrl;
+                    $scope.model1 = { source: "", imageUrl: "https://file.yoyoba.cn" + model.imageUrl };
+                } else { $scope.model1 = { source: "", imageUrl: "/images/add_pic.png" }; }
+                $("#addModel").modal("show");
+            };
+            $scope.save = function () {
+                $scope.model1.imageUrl = $scope.imageUrl;
+                $scope.model1.source = "app";
+                $query.post(`/System/AddBanner`, $scope.model1, res => {
+                    if (res.code == 200) {
+                        $scope.pageChanged();
+                        $("#addModel").modal("hide");
+                    } else {
+                        $Alert(res.message);
+                    }
+                });
+            }
+            $scope.pageChanged = function (reindex) {
+                if (reindex) {
+                    $scope.search.pageIndex = 1;
+                }
+                $query.post("/System/BannerList", $scope.search, function (response) {
+                    if (response.code === 200) {
+                        $scope.List = response.data;
+                        $scope.search.recordCount = response.recordCount;
+                    } else {
+                        $Alert(response.message);
+                    }
+                });
+            };
+            $scope.delAdPic = function (model) {
+                $Confirm("你确定要删除该广告吗?", function () {
+                    model.isDel = true;
+                    $query.post("/System/AddBanner", model, function (response) {
+                        if (response.code === 200) {
+                            $scope.pageChanged();
+                        } else {
+                            $Alert(response.message);
+                        }
+                    });
+                }, "消息提醒");
+            };
+            $scope.pageChanged();
+            $scope.uploadHeadImage = function (input) {
+                var reader = new FileReader();
+                reader.onloadend = function (e) {
+                    var img = new Image();
+                    img.onload = function () {
+                        //生成比例
+                        var w = img.width;
+                        var h = img.height;
+                        //生成canvas
+                        var canvas = document.createElement('canvas');
+                        var ctx = canvas.getContext('2d');
+                        $(canvas).attr({ width: w, height: h });
+                        ctx.drawImage(img, 0, 0, w, h);
+                        $scope.model1.imageUrl = canvas.toDataURL('image/png', 0.2);
+                        $scope.$apply();
+                    }
+                    img.src = reader.result;
+                    $query.post('/Upload/Image', { Url: reader.result }, function (res) {
+                        if (res.code === 200) {
+                            $scope.imageUrl = res.data.url;
+                        }
+                    });
+
+                };
+                reader.readAsDataURL(input.files[0]);
+            };
+            $scope.ToBase64 = function (input) {
+                var imgFile = new FileReader();
+                imgFile.readAsDataURL(input.files[0]);
+                imgFile.onload = function () {
+                    $scope.model1.imageUrl = this.result;
+                    $scope.$apply();
+                }
+            };
+            $scope.htmlConvertText = function (content) {
+                return $sce.trustAsHtml(content);
+            };
+
+
+        });
+
+    </script>
+}

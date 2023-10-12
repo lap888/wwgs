@@ -1,0 +1,8 @@
+[program:Manage]
+command=dotnet webAdmin.dll
+directory=/apps/project/manage
+autorestart=true
+stderr_logfile=/apps/supervisord/logs/manage/err.log
+stdout_logfile=/apps/supervisord/logs/manage/run.log
+environment=ASPNETCORE_ENVIRONMENT=Development,ASPNETCORE_URLS="http://172.30.0.7:6005"
+user=root

@@ -1,0 +1,403 @@
+﻿@{
+ViewData["Title"] = "会员管理";
+}
+@using Gs.Domain.Enums;
+<style>
+    .form-inline .col-sm-12 {
+        line-height: 55px;
+    }
+
+    .form-inline .col-sm-2 {
+        width: 80px;
+    }
+
+    .form-inline .col-sm-4 .col-sm-4 {
+        line-height: 35px;
+    }
+
+    .form-inline .control-label {
+        text-align: right;
+    }
+
+    .search .form-inline {
+        line-height: 40px;
+    }
+</style>
+
+<div class="row search">
+    <div class="form-inline">
+        <div class="form-inline">
+            <div class="form-inline">
+                <label control-label>邀请码:</label>
+                <input type="number" class="form-control" size="8" ng-model="search.inviterCode" />
+                <label control-label>手机号:</label>
+                <input type="text" class="form-control" size="12" ng-model="search.mobile" />
+
+                <label control-label>邀请人手机号:</label>
+                <input type="text" class="form-control" size="12" ng-model="search.inviterMobile" />
+                <label control-label>支付宝号:</label>
+                <input type="text" class="form-control" size="12" ng-model="search.alipay" />
+                <label control-label>会员状态:</label>
+                <select class="form-control" style="display:inline-block;width:auto;" ng-model="search.status">
+                    <option value="" selected>全部</option>
+                    <option value="0">正常</option>
+                    <option value="2">已冻结</option>
+                </select>
+                <label control-label>认证状态:</label>
+                <select class="form-control" style="display:inline-block;width:auto;" ng-model="search.auditState">
+                    <option value="" selected>全部</option>
+                    <option value="0">未认证</option>
+                    <option value="2">已认证</option>
+                </select>
+            </div>
+        </div>
+        <button class="btn btn-primary" type="button" ng-click="pageChanged(true)">搜索</button>
+    </div>
+</div>
+<table class="table table-hover table-condensed table-bordered" style="width:auto;">
+    <thead>
+        <tr style="height:35px;">
+            <th style="width: 2%;">序号</th>
+            <th style="width: 4%;">昵称</th>
+            <th style="width: 4%;">邀请码</th>
+            <th style="width: 2%;">等级</th>
+            <th style="width: 2%;">NW</th>
+            <th style="width: 4%;">荣誉值</th>
+            <th style="width: 2%;">手机号</th>
+            <th style="width: 4%;">上级手机</th>
+            <th style="width: 3%;">状态</th>
+            <th style="width: 3%;">认证</th>
+            <th style="width: 4%;">备注</th>
+            <th style="width: 4%;">注册时间</th>
+            <th style="width: 7%;">操作</th>
+        </tr>
+    </thead>
+    <tbody class="wait-loaded">
+        <tr ng-repeat="m in List">
+            <td>{{m.id}}</td>
+            <td>{{m.name}}</td>
+            <td>{{m.rcode}}</td>
+            <td>{{m.level}}</td>
+            <td>{{m.coinBalance}}</td>
+            <td>{{m.honorBalance}}</td>
+            <td>{{m.mobile}}</td>
+            <td>{{m.inviterMobile}}</td>
+            <td ng-switch="{{m.status}}">
+                <div ng-switch-when="0" style="color:green;">正常</div>
+                <div ng-switch-when="1" style="color:darkgoldenrod;">未知</div>
+                <div ng-switch-when="2" style="color:red;">已冻结</div>
+            </td>
+            <td ng-switch="{{m.auditState}}">
+                <div ng-switch-when="0" style="color:red;">未实名</div>
+                <div ng-switch-when="1" style="color:darkgoldenrod;">未知</div>
+                <div ng-switch-when="2" style="color:green;">已实名</div>
+            </td>
+            <td>{{m.remark}}</td>
+            <td>{{m.ctime}}</td>
+            <td>
+                <a style="display:{{m.status == 2 ? 'black' : 'none'}};" ng-click="Unfreeze(m)"
+                    href="javascript:void(0);">解冻</a>
+                <a style="display:{{m.status == 0 ? 'black' : 'none'}};" ng-click="FreezeView(m)"
+                    href="javascript:void(0);">冻结</a>
+                <a ng-click="ViewAuth(m)" href="javascript:void(0);">详情</a>
+            </td>
+        </tr>
+    </tbody>
+</table>
+<div class="mypager wait-loaded">
+    <ul uib-pagination total-items="search.recordCount" items-per-page="search.pageSize" ng-change="pageChanged()"
+        ng-model="search.pageIndex" max-size="7" class="pagination-sm" boundary-links="true" num-pages="search.numPages"
+        boundary-link-numbers="true" first-text="首页" last-text="末页" previous-text="上一页" next-text="下一页"></ul>
+    <div class="recordCount">共 {{search.recordCount}} 条</div>
+</div>
+<div class="modal fade in" id="UserInfo" tabindex="-1" role="dialog" data-backdrop="static"
+    aria-labelledby="myModalLabel">
+    <div class="modal-dialog modal-lg" role="document" style="height:80%">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span
+                        class="sr-only">Close</span></button>
+            </div>
+            <div class="modal-body">
+                <div style="min-height:350px;">
+                    <form name="ModifyUser">
+                        <div class="tab-content">
+                            <div role="tabpanel" class="tab-pane active" id="setting_1">
+                                <div class="form-inline">
+                                    <input class="form-control" type="text" ng-model="u.id" style="display:none;"
+                                        disabled />
+                                    <div class="col-sm-12">
+                                        <label class="control-label col-sm-3">昵 称:</label>
+                                        <div class="col-sm-9">
+                                            <input class="form-control" type="text" ng-model="u.name" placeholder=""
+                                                disabled />
+                                        </div>
+                                    </div>
+                                    <div class="col-sm-12">
+                                        <label class="control-label col-sm-3">手机号:</label>
+                                        <div class="col-sm-9">
+                                            <input class="form-control" type="text" ng-model="u.mobile" placeholder=""
+                                                disabled />
+                                        </div>
+                                    </div>
+                                    <div class="col-sm-12">
+                                        <label class="control-label col-sm-3">支付宝:</label>
+                                        <div class="col-sm-9">
+                                            <input class="form-control" type="text" ng-model="u.alipay" placeholder=""
+                                                required />
+                                        </div>
+                                    </div>
+                                    @*<div class="col-sm-12">
+                                        <label class="control-label col-sm-3">二次认证:</label>
+                                        <div class="col-sm-9">
+                                            <input class="form-control" type="text" ng-model="u.alipayUid"
+                                                placeholder="" />
+                                        </div>
+                                    </div>*@
+                                    <div class="col-sm-12">
+                                        <div class="col-sm-10 col-sm-offset-2">
+                                            <button class="btn btn-success" ng-click="Modify(u)"
+                                                ng-disabled="ModifyUser.$invalid">保 存</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade in" id="AuthInfo" tabindex="-1" role="dialog" data-backdrop="static"
+    aria-labelledby="myModalLabel">
+    <div class="modal-dialog modal-lg" role="document" style="height:80%">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span
+                        class="sr-only">Close</span></button>
+            </div>
+            <div class="modal-body">
+                <table class="table table-hover table-condensed table-bordered" style="width:100%; text-align:center;">
+                    <thead style="text-align:center;">
+                        <tr style="height:35px;">
+                            <th style="width: 14%;">账户类型</th>
+                            <th style="width: 14%;">总收入</th>
+                            <th style="width: 14%;">总支出</th>
+                            <th style="width: 14%;">剩余</th>
+                            <th style="width: 14%;">已冻结</th>
+                            <th style="width: 14%;">可用</th>
+                            <th style="width: 16%;">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody class="wait-loaded">
+                        <tr>
+                            <td>钱包</td>
+                            <td>{{account.wallet.revenue}}</td>
+                            <td>{{account.wallet.expenses}}</td>
+                            <td>{{account.wallet.balance}}</td>
+                            <td>{{account.wallet.frozen}}</td>
+                            <td>{{account.wallet.balance - account.wallet.frozen}}</td>
+                            <td>
+                                <a href="/Member/AccountRecord?type=wallet&id={{account.uid}}">明细</a>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>贡献值</td>
+                            <td>{{account.cotton.revenue}}</td>
+                            <td>{{account.cotton.expenses}}</td>
+                            <td>{{account.cotton.balance}}</td>
+                            <td>{{account.cotton.frozen}}</td>
+                            <td>{{account.cotton.usable}}</td>
+                            <td>
+                                <a href="/Member/AccountRecord?type=cotton&id={{account.uid}}">明细</a>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>NW</td>
+                            <td>{{account.conch.revenue}}</td>
+                            <td>{{account.conch.expenses}}</td>
+                            <td>{{account.conch.balance}}</td>
+                            <td>{{account.conch.frozen}}</td>
+                            <td>{{account.conch.usable}}</td>
+                            <td>
+                                <a href="/Member/AccountRecord?type=conch&id={{account.uid}}">明细</a>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>荣誉值</td>
+                            <td>{{account.honor.revenue}}</td>
+                            <td>{{account.honor.expenses}}</td>
+                            <td>{{account.honor.balance}}</td>
+                            <td>{{account.honor.frozen}}</td>
+                            <td>{{account.honor.usable}}</td>
+                            <td>
+                                <a href="/Member/AccountRecord?type=honor&id={{account.uid}}">明细</a>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>积分</td>
+                            <td>{{account.integral.revenue}}</td>
+                            <td>{{account.integral.expenses}}</td>
+                            <td>{{account.integral.balance}}</td>
+                            <td>{{account.integral.frozen}}</td>
+                            <td>{{account.integral.usable}}</td>
+                            <td>
+                                <a href="/Member/AccountRecord?type=integral&id={{account.uid}}">明细</a>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade in" id="FreezeBox" tabindex="-1" role="dialog" data-backdrop="static"
+    aria-labelledby="myModalLabel">
+    <div class="modal-dialog modal-lg" role="document" style="height:80%">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span
+                        class="sr-only">Close</span></button>
+            </div>
+            <div class="modal-body" style="min-height:400px;">
+                <form name="FreezeFrom">
+                    <div class="tab-content">
+                        <div role="tabpanel" class="tab-pane active" id="setting_1">
+                            <div class="form-inline">
+                                <div class="col-sm-12">
+                                    <label class="control-label col-sm-2">理由:</label>
+                                    <div class="col-sm-10">
+                                        <textarea class="form-control" cols="50" rows="6" ng-model="u.remark"
+                                            placeholder="" required /></textarea>
+                                    </div>
+                                </div>
+                                <div class="col-sm-12">
+                                    <div class="col-sm-10 col-sm-offset-2">
+                                        <button class="btn btn-success" ng-click="Freeze(u)"
+                                            ng-disabled="FreezeFrom.$invalid">提 交</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade in" id="ShowImage_Form" tabindex="-1" role="dialog" data-backdrop="static"
+    aria-labelledby="myModalLabel">
+    <div class="modal-dialog modal-lg" role="document" style="height:80%">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span
+                        class="sr-only">Close</span></button>
+            </div>
+            <div class="modal-body">
+                <div id="img_show" style="text-align:center;">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts{
+<script type="text/javascript">
+    function showimage(obj) {
+        $("#ShowImage_Form").modal("show");
+        $("#ShowImage_Form").find("#img_show").html("<img src='" + obj.src + "' class='carousel-inner img-responsive img-rounded' style='max-width:350px; margin: 0 auto;'/>");
+    }
+</script>
+<script type="text/javascript">
+    $angular.add(function ($scope, $query, $timeout, $sce) {
+        $scope.search = { pageIndex: 1, pageSize: 20 };
+        $scope.account = {};
+        $scope.pageChanged = function (reindex) {
+            if (reindex) {
+                $scope.search.pageIndex = 1;
+            }
+            $query.post("/Member/List", $scope.search, function (response) {
+                if (response.code === 200) {
+                    $scope.List = response.data.list;
+                    $scope.search.recordCount = response.recordCount;
+                } else {
+                    $Alert(response.message);
+                }
+            });
+        };
+        $scope.Unfreeze = function (model) {
+            $Confirm("你确定要恢复此会员吗?", function () {
+                $query.post("/Member/Unfreeze", model, function (response) {
+                    if (response.code === 200) {
+                        $scope.pageChanged();
+                    } else {
+                        $Alert(response.message);
+                    }
+                });
+            }, "消息提醒");
+        }
+        $scope.FreezeView = function (model) {
+            $scope.u = model;
+            $("#FreezeBox").modal("show");
+        }
+        $scope.Freeze = function (model) {
+            $Confirm("你确定要冻结此会员吗?", function () {
+                $query.post("/Member/Freeze", model, function (response) {
+                    if (response.code === 200) {
+                        $scope.pageChanged();
+                        $("#FreezeBox").modal("hide");
+                    } else {
+                        $Alert(response.message);
+                    }
+                });
+            }, "消息提醒");
+        }
+        $scope.ViewAuth = function (model) {
+            $query.post("/Member/AccountInfo", model, function (response) {
+                if (response.code === 200) {
+                    $("#AuthInfo").modal("show");
+                    $scope.account = response.data;
+                    $scope.account.uid = model.id;
+                } else {
+                    $Alert(response.message);
+                }
+            });
+        }
+        $scope.ModifyView = function (model) {
+            $scope.u = model;
+            $("#UserInfo").modal("show");
+        }
+        $scope.ClearAlipayUid = function (model) {
+            $Confirm("你确定要重置二次认证吗?", function () {
+                model.alipayUid = "";
+                $query.post("/Member/Modify", model, function (response) {
+                    if (response.code === 200) {
+                        $scope.pageChanged();
+                        $("#UserInfo").modal("hide");
+                    } else {
+                        $Alert(response.message);
+                    }
+                });
+            }, "消息提醒");
+        }
+        $scope.Modify = function (model) {
+            $Confirm("你确定要修改此会员吗?", function () {
+                $query.post("/Member/Modify", model, function (response) {
+                    if (response.code === 200) {
+                        $scope.pageChanged();
+                        $("#UserInfo").modal("hide");
+                    } else {
+                        $Alert(response.message);
+                    }
+                });
+            }, "消息提醒");
+        }
+        $scope.pageChanged();
+    });
+
+</script>
+
+}

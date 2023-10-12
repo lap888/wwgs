@@ -1,0 +1,515 @@
+﻿@{
+    ViewData["Title"] = "商品管理";
+}
+@using Gs.Domain.Enums;
+<style>
+    .form-inline .col-sm-12 {
+        line-height: 55px;
+    }
+
+    .form-inline .col-sm-2 {
+        width: 80px;
+    }
+
+    .form-inline .col-sm-4 .col-sm-4 {
+        line-height: 35px;
+    }
+
+    .form-inline .control-label {
+        text-align: right;
+    }
+
+    .search .form-inline {
+        line-height: 40px;
+    }
+
+    .download-imgbox {
+        overflow: hidden;
+        display: flex;
+        flex-wrap: wrap;
+        margin: 0.2rem auto;
+    }
+
+    .thumbimg {
+        width: 80px;
+        height: 80px;
+        overflow: hidden;
+        position: relative;
+        margin: 0.13rem;
+    }
+
+        .thumbimg img {
+            width: 80px;
+            height: 80px;
+        }
+
+        .thumbimg span {
+            display: block;
+            width: 20px;
+            height: 20px;
+            background: url(/images/del_pic.png) no-repeat center center;
+            background-size: 20px 20px;
+            position: absolute;
+            top: 0;
+            right: 0;
+            background-color: rgba(255, 255, 255, 0.5);
+        }
+
+    .csimg {
+        width: 80px;
+        height: 80px;
+        overflow: hidden;
+        position: relative;
+        margin: 0.13rem;
+    }
+
+        .csimg .xuanze {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 80px;
+            height: 80px;
+            background: url(/images/add_pic.png) no-repeat center center;
+            background-size: 100% 100%;
+        }
+</style>
+
+<div class="row search">
+    <div class="form-inline">
+        <div class="form-inline">
+            <div class="form-inline">
+                <label control-label>商品名:</label>
+                <input type="text" class="form-control" size="12" ng-model="search.alipay" />
+            </div>
+        </div>
+        <button class="btn btn-primary" type="button" ng-click="pageChanged(true)">搜索</button>
+        <button class="btn btn-primary" ng-click="addModal(m)" href="javascript:void(0);">添加商品</button>
+    </div>
+</div>
+<table class="table table-hover table-condensed table-bordered" style="width:auto;">
+    <thead>
+        <tr style="height:35px;">
+            <th style="width: 3%;">序号</th>
+            <th style="width: 10%;">名称</th>
+            <th style="width: 6%;">商品图</th>
+            <th style="width: 6%;">标签</th>
+            <th style="width: 5%;">原价</th>
+            <th style="width: 5%;">所需积分</th>
+            <th style="width: 5%;">服务费</th>
+            <th style="width: 5%;">库存</th>
+            <th style="width: 5%;">状态</th>
+            <th style="width: 5%;">备注</th>
+            <th style="width: 8%;">操作</th>
+        </tr>
+    </thead>
+    <tbody class="wait-loaded">
+        <tr ng-repeat="m in List">
+            <td>{{m.id}}</td>
+            <td>{{m.name}}</td>
+            <td class="_image">
+                <div ng-repeat="item in m.images">
+                    <img ng-src="https://file.yoyoba.cn/{{item}}" onclick="showimage(this)" style="max-width:250px;height:50px" />
+                </div>
+            </td>
+            <td>{{m.keywords}}</td>
+            <td>{{m.oldPrice}}元</td>
+            <td>{{m.pointsPrice}}积分</td>
+            <td>{{m.servicePrice}}元</td>
+            <td>{{m.stock}}</td>
+            <td>{{m.published==1?'已发布':'未上架'}}</td>
+            <td>{{m.remark}}</td>
+            <td>
+                <a ng-click="showItem(m)" href="javascript:void(0);">详情</a>
+                <a ng-click="putItem(m)" href="javascript:void(0);">{{m.published == 1 ? "下架" : "上架"}}</a>
+                <a ng-click="delItem(m)" href="javascript:void(0);">删除</a>
+            </td>
+        </tr>
+    </tbody>
+</table>
+<div class="mypager wait-loaded">
+    <ul uib-pagination total-items="search.recordCount" items-per-page="search.pageSize" ng-change="pageChanged()"
+        ng-model="search.pageIndex" max-size="7" class="pagination-sm" boundary-links="true" num-pages="search.numPages"
+        boundary-link-numbers="true" first-text="首页" last-text="末页" previous-text="上一页" next-text="下一页"></ul>
+    <div class="recordCount">共 {{search.recordCount}} 条</div>
+</div>
+@* 添加商品 *@
+<div class="modal fade in" id="addModel" tabindex="-1" role="dialog" data-backdrop="static" aria-labelledby="myModalLabel">
+    <div class="modal-dialog modal-lg" role="document" style="height:100%">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal">
+                    <span aria-hidden="true">&times;</span><span class="sr-only">Close</span>
+                </button>
+            </div>
+            <form name="myForm">
+                <div class="tab-content">
+                    <div role="tabpanel" class="tab-pane active" id="setting_1">
+                        <div class="form-inline">
+                            <input class="form-control" type="text" data-ng-model="model1.id" style="display:none;" />
+                            @*<div class="col-sm-12">
+                                    <label class="control-label col-sm-4">商品分类:</label>
+                                    <div class="col-sm-8">
+                                        <select id="gender" ng-change="getShopType2()" class="form-control" ng-model="model1.cateId" ng-options="s.id as s.name for s in List1" required>
+                                            <option value="">--请选择--</option>
+                                        </select>
+                                    </div>
+                                </div>*@
+                            <div class="col-sm-12">
+                                <label class="control-label col-sm-4">名称:</label>
+                                <div class="col-sm-8">
+                                    <input class="form-control" type="text" ng-model="model1.name" placeholder="商品名称" required />
+                                </div>
+                            </div>
+                            <div class="col-sm-12">
+                                <label class="control-label col-sm-4">商品展示图:</label>
+                                <div class="col-sm-8">
+                                    <div class='download-imgbox'>
+                                        <div class='thumbimg' ng-repeat="item in thumb">
+                                            <label><img ng-src="{{item.imgSrc}}" /> </label>
+                                            <span ng-if="item.imgSrc" ng-click="img_del($index)"></span>
+                                        </div>
+                                        <div ng-repeat="item in thumb_default" class='csimg'>
+                                            <label class="xuanze">
+                                                <input type="file" id="inputfile" accept="image/*" file-model="images" onchange="angular.element(this).scope().img_upload(this.files)" style='display:none;' />
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-sm-12">
+                                <label class="control-label col-sm-4">原价:</label>
+                                <div class="col-sm-8">
+                                    <input class="form-control" type="number" ng-model="model1.oldPrice" placeholder="0.00" required />
+                                </div>
+                            </div>
+                            <div class="col-sm-12">
+                                <label class="control-label col-sm-4">所需积分:</label>
+                                <div class="col-sm-8">
+                                    <input class="form-control" type="number" ng-model="model1.pointsPrice" placeholder="100" required />
+                                </div>
+                            </div>
+                            <div class="col-sm-12">
+                                <label class="control-label col-sm-4">服务费:</label>
+                                <div class="col-sm-8">
+                                    <input class="form-control" type="number" ng-model="model1.servicePrice" placeholder="10" required />
+                                </div>
+                            </div>
+                            <div class="col-sm-12">
+                                <label class="control-label col-sm-4">库存:</label>
+                                <div class="col-sm-8">
+                                    <input class="form-control" type="number" ng-model="model1.stock" placeholder="9999" required />
+                                </div>
+                            </div>
+                            <div class="col-sm-12">
+                                <label class="control-label col-sm-4">商品描述:</label>
+                                <div class="col-sm-8">
+                                    <textarea config="customConfig" class="ueditor" style="height:200px; max-width:none;" ng-model="model1.description" placeholder="商品描述"></textarea>
+                                </div>
+                            </div>
+                            <div class="col-sm-12">
+                                <label class="control-label col-sm-4">备注:</label>
+                                <div class="col-sm-8">
+                                    <input class="form-control" type="text" ng-model="model1.remark" placeholder="备注" required />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success" ng-disabled="model1.$invalid" ng-click="saveItem(model1)">
+                    保
+                    存
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+@* 修改商品 *@
+<div class="modal fade in" id="editModel" tabindex="-1" role="dialog" data-backdrop="static" aria-labelledby="myModalLabel">
+    <div class="modal-dialog modal-lg" role="document" style="height:100%">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal">
+                    <span aria-hidden="true">&times;</span><span class="sr-only">Close</span>
+                </button>
+            </div>
+            <form name="myForm">
+                <div class="tab-content">
+                    <div role="tabpanel" class="tab-pane active" id="setting_1">
+                        <div class="form-inline">
+                            <input class="form-control" type="text" data-ng-model="model1.id" style="display:none;" />
+                            @*<div class="col-sm-12">
+                                    <label class="control-label col-sm-4">商品分类:</label>
+                                    <div class="col-sm-8">
+                                        <select id="gender" ng-change="getShopType2()" class="form-control" ng-model="model1.cateId" ng-options="s.id as s.name for s in List1" required>
+                                            <option value="">--请选择--</option>
+                                        </select>
+                                    </div>
+                                </div>*@
+                            <div class="col-sm-12">
+                                <label class="control-label col-sm-4">名称:</label>
+                                <div class="col-sm-8">
+                                    <input class="form-control" type="text" ng-model="detail.name" placeholder="商品名称" required />
+                                </div>
+                            </div>
+                            <div class="col-sm-12">
+                                <label class="control-label col-sm-4">商品展示图:</label>
+                                <div class="col-sm-8">
+                                    <div class='download-imgbox'>
+                                        <div class='thumbimg' ng-repeat="item in thumb">
+                                            <label><img ng-src="{{item.imgSrc}}" /> </label>
+                                            <span ng-if="item.imgSrc" ng-click="img_del($index)"></span>
+                                        </div>
+                                        <div ng-repeat="item in thumb_default" class='csimg'>
+                                            <label class="xuanze">
+                                                <input type="file" id="inputfile" accept="image/*" file-model="images" onchange="angular.element(this).scope().img_upload(this.files)" style='display:none;' />
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-sm-12">
+                                <label class="control-label col-sm-4">原价:</label>
+                                <div class="col-sm-8">
+                                    <input class="form-control" type="number" ng-model="detail.oldPrice" placeholder="0.00" required />
+                                </div>
+                            </div>
+                            <div class="col-sm-12">
+                                <label class="control-label col-sm-4">所需积分:</label>
+                                <div class="col-sm-8">
+                                    <input class="form-control" type="number" ng-model="detail.pointsPrice" placeholder="100" required />
+                                </div>
+                            </div>
+                            <div class="col-sm-12">
+                                <label class="control-label col-sm-4">服务费:</label>
+                                <div class="col-sm-8">
+                                    <input class="form-control" type="number" ng-model="detail.servicePrice" placeholder="10" required />
+                                </div>
+                            </div>
+                            <div class="col-sm-12">
+                                <label class="control-label col-sm-4">库存:</label>
+                                <div class="col-sm-8">
+                                    <input class="form-control" type="number" ng-model="detail.stock" placeholder="9999" required />
+                                </div>
+                            </div>
+                            <div class="col-sm-12">
+                                <label class="control-label col-sm-4">商品描述:</label>
+                                <div class="col-sm-8">
+                                    <textarea config="customConfig" class="ueditor" style="height:200px; max-width:none;" ng-model="detail.description" placeholder="商品描述"></textarea>
+                                </div>
+                            </div>
+                            <div class="col-sm-12">
+                                <label class="control-label col-sm-4">备注:</label>
+                                <div class="col-sm-8">
+                                    <input class="form-control" type="text" ng-model="detail.remark" placeholder="备注" required />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success" ng-disabled="model1.$invalid" ng-click="saveItem(detail)">
+                    保
+                    存
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade in" id="ShowImage_Form" tabindex="-1" role="dialog" data-backdrop="static" aria-labelledby="myModalLabel">
+    <div class="modal-dialog modal-lg" role="document" style="height:80%">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+            </div>
+            <div class="modal-body">
+                <div id="img_show" style="text-align:center;">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts{
+    <script type="text/javascript">
+        function showimage(obj) {
+            $("#ShowImage_Form").modal("show");
+            $("#ShowImage_Form").find("#img_show").html("<img src='" + obj.src + "' class='carousel-inner img-responsive img-rounded' />");
+        }
+    </script>
+    <script type="text/javascript">
+        $angular.add(function ($scope, $query, $timeout, $sce) {
+            $scope.search = { pageIndex: 1, pageSize: 20 };
+            $scope.detail = {};
+            $scope.imgkey = 0;
+            $scope.uploadimgs = [];
+            $scope.customConfig = {
+                initialFrameWidth: "100%",
+                initialFrameHeight: 320,
+                imageActionName: "Local&path=/Upload/Editor",
+                catcherActionName: "Remote&path=/Upload/Editor",
+                state: "SUCCESS",
+                imageUrlPrefix: "",
+                catcherFieldName: "upfile",
+                catcherUrlPrefix: ''
+            };
+            $scope.pageChanged = function (reindex) {
+                if (reindex) {
+                    $scope.search.pageIndex = 1;
+                }
+                $query.post("/Mall/ItemList", $scope.search, function (response) {
+                    if (response.code === 200) {
+                        $scope.List = response.data;
+                        for (var i in $scope.List) {
+                            $scope.List[i].images = $scope.List[i].images.split(",");
+                        }
+                        $scope.search.recordCount = response.recordCount;
+                    } else {
+                        $Alert(response.message);
+                    }
+                });
+            };
+            $scope.pageChanged();
+            $scope.reader = new FileReader();
+            $scope.form = { image: {}, };
+            $scope.thumb = {};
+            $scope.thumb_default = { 1111: {} };
+            $scope.img_upload = function (files) {
+                $scope.reader.readAsDataURL(files[0]);  //FileReader的方法，把图片转成base64
+                var url = "";
+                $scope.imgarr = [];
+                $scope.reader.onload = function (ev) {
+                    $scope.$apply(function () {
+                        $scope.thumb[$scope.imgkey] = {
+                            imgSrc: ev.target.result,  //接收base64
+                        }
+                    });
+                    url = ev.target.result;
+                    $query.post('/Upload/Image', { Url: url }, function (res) {
+                        if (res.code === 200) {
+                            $scope.form.image[$scope.imgkey] = res.data.url;
+                            $scope.thumb[$scope.imgkey].status = 'success';
+                            $scope.imgarr.push($scope.form);
+                            $scope.imgkey++;
+                        }
+                    });
+                };
+
+            };
+            $scope.img_del = function (key) {
+                var guidArr = [];
+                for (var p in $scope.thumb) {
+                    guidArr.push(p);
+                }
+                delete $scope.detail.images[key];
+                delete $scope.thumb[guidArr[key]];
+                delete $scope.form.image[guidArr[key]];
+            };
+            $scope.htmlConvertText = function (content) {
+                return $sce.trustAsHtml(content);
+            };
+            $scope.addModal = function (model) {
+                $scope.detail = {};
+                $scope.thumb = {};
+                $scope.model1 = { gameCategoryId: "", imageUrl: "/images/add_pic.png" };
+                $("#addModel").modal("show");
+            };
+            $scope.putItem = function (model) {
+                var dec = "";
+                if (model.published == 1) {
+                    model.published = 0;
+                    dec = "下架";
+                } else {
+                    model.published = 1;
+                    dec = "上架";
+                }
+                model.images = model.images.join();
+                $Confirm("你确定要" + dec + "吗?", function () {
+                    $query.post(`/Mall/AddItem`, model, res => {
+                        if (res.code == 200) {
+                            $scope.pageChanged();
+                        } else {
+                            $Alert(response.message);
+                        }
+                    });
+                }, "消息提醒");
+            };
+            $scope.delItem = function (model) {
+                $Confirm("你确定要删除吗?", function () {
+                    model.deleted = 1;
+                    model.images = model.images.join();
+                    $query.post(`/Mall/AddItem`, model, res => {
+                        if (res.code == 200) {
+                            $scope.pageChanged();
+                            $("#addModel").modal("hide");
+                        } else {
+                            $Alert(response.message);
+                        }
+                    });
+                }, "消息提醒");
+            };
+            $scope.saveItem = function (model) {
+                $Confirm("你确定要保存吗?", function () {
+                    var arr = [];
+                    for (var i in $scope.form.image) {
+                        arr.push($scope.form.image[i]);
+                    }
+                    model.images = arr.join();
+                    $query.post(`/Mall/AddItem`, model, res => {
+                        if (res.code == 200) {
+                            $scope.pageChanged();
+                            $("#addModel").modal("hide");
+                            $("#editModel").modal("hide");
+                        } else {
+                            $Alert(res.message);
+                        }
+                    });
+                }, "消息提醒");
+            };
+            $scope.showItem = function (model) {
+                $scope.detail = model;
+                $scope.imgkey = 0;
+                $scope.thumb = {};
+                for (var i in model.images) {
+                    $scope.guid = (new Date()).valueOf();
+                    setThumb(model.images[i], $scope.imgkey);
+                    $scope.form.image[$scope.imgkey] = model.images[i];
+                    $scope.imgkey++;
+                }
+                $("#editModel").modal("show");
+            };
+
+            function setThumb(url, key) {
+                getBase64("https://file.yoyoba.cn" + url, function (e) {
+                    $scope.$apply(function () {
+                        $scope.thumb[key] = {
+                            imgSrc: e,
+                        }
+                    });
+                });
+            }
+
+            function getBase64(url, callback, outputFormat) {
+
+                var canvas = document.createElement('CANVAS'),
+                    ctx = canvas.getContext('2d'),
+                    img = new Image;
+                img.crossOrigin = '*';
+                img.onload = function () {
+                    canvas.height = img.height;
+                    canvas.width = img.width;
+                    ctx.drawImage(img, 0, 0);
+                    var dataURL = canvas.toDataURL(outputFormat || 'image/png');
+                    callback.call(this, dataURL);
+                    canvas = null;
+                };
+                img.src = url + '?v=' + Math.random();
+            }
+        });
+
+    </script>
+
+}
